@@ -1,135 +1,105 @@
-# kroc
-// TODO(user): Add simple overview of use/purpose
+# 🚀 Kroc - Kubernetes Reactive Object Creator
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+This is an **educational hobby project** designed to demonstrate the creation of Kubernetes Operators using **Go (Golang)** and the **kubebuilder** framework.
 
-## Getting Started
+The KROC operator introduces a custom resource, **`Kroc`**, which enables **reactive resource derivation**:
+* It allows you to **watch** arbitrary Kubernetes objects (e.g., Deployments, Services) across the cluster.
+* It **creates and manages** derived objects using attributes retrieved from the watched resources.
 
-### Prerequisites
-- go version v1.24.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
+---
 
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
+## ✨ Key Features & Behavior
 
-```sh
-make docker-build docker-push IMG=<some-registry>/kroc:tag
-```
+* **Custom Resource Definition (CRD):** Defines the `Kroc` resource where all configuration (watched objects, templates) resides.
+* **Go Templating:** Leverages the **Go Template Language** (`text/template`) within the `resourceToCreate` field, enabling dynamic and flexible generation of multiple derived Kubernetes objects.
+* **Automatic Synchronization:**
+    * If the **watched object changes**, all of its derived **child objects will be regenerated**.
+    * If any **derived child object is manually removed**, the operator automatically **recreates** it to maintain the desired state.
+* **Controller Composition:** Demonstrates the technique of **chaining three distinct controllers** to clearly separate the responsibilities of resource observation, custom resource management, and object generation.
 
-**NOTE:** This image ought to be published in the personal registry you specified.
-And it is required to have access to pull the image from the working environment.
-Make sure you have the proper permission to the registry if the above commands don’t work.
+---
 
-**Install the CRDs into the cluster:**
+## 🏗️ Architecture & Concept
 
-```sh
-make install
-```
+The core architecture consists of three specialized and interconnected controllers: 
 
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
+### 1. Kroc Controller (The Config Manager)
 
-```sh
-make deploy IMG=<some-registry>/kroc:tag
-```
+This is the primary controller that reconciles the custom **`Kroc`** resource. Its main role is to consume the configuration:
+* **Monitors** all instances of the custom `Kroc` resource.
+* **Initializes** and configures the `Watch Controller` based on the object specifications in the `Kroc` spec.
+* **Manages** the overall lifecycle and status of the `Kroc` object.
 
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
-privileges or be logged in as admin.
+### 2. Watch Controller (The Observer)
 
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
+This controller handles the dynamic tracking of external resources defined in the `Kroc` configuration.
 
-```sh
-kubectl apply -k config/samples/
-```
+* **Sets up watches** on the arbitrary **target objects** specified by fields like `apiVersion`, `kind`, `nameRegex`, and `namespaceRegex`.
+* When a target object changes, it **extracts** the required attributes (data to be used in the template) and **triggers** the `Creator Controller` to regenerate the children.
 
->**NOTE**: Ensure that the samples has default values to test it out.
+### 3. Creator Controller (The Derivation Handler)
 
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
+This controller manages the creation and lifecycle of the final derived objects.
 
-```sh
-kubectl delete -k config/samples/
-```
+* **Applies** the resulting YAML/JSON to the cluster, handling creation logic to ensure the derived object's state matches the template.
 
-**Delete the APIs(CRDs) from the cluster:**
+---
 
-```sh
-make uninstall
-```
+## 💡 Example Usage
 
-**UnDeploy the controller from the cluster:**
+The `resourceToCreate` field uses the **Go Template Language**, allowing you to generate one or more Kubernetes objects dynamically. Data from the watched object is available via the `{{.parent}}` object (e.g., `{{.parent.metadata.uid}}`).
 
-```sh
-make undeploy
-```
+### Defining a Watch and Creating Multiple Pods
 
-## Project Distribution
+The following manifest creates a `Kroc` resource that watches Deployments matching the regex pattern "pawel" in namespaces matching "pawel". When a match is found, it uses templating to create **two separate Pods** whose existence is automatically managed by the operator.
 
-Following the options to release and provide this solution to the users.
-
-### By providing a bundle with all YAML files
-
-1. Build the installer for the image built and published in the registry:
-
-```sh
-make build-installer IMG=<some-registry>/kroc:tag
-```
-
-**NOTE:** The makefile target mentioned above generates an 'install.yaml'
-file in the dist directory. This file contains all the resources built
-with Kustomize, which are necessary to install this project without its
-dependencies.
-
-2. Using the installer
-
-Users can just run 'kubectl apply -f <URL for YAML BUNDLE>' to install
-the project, i.e.:
-
-```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/kroc/<tag or branch>/dist/install.yaml
-```
-
-### By providing a Helm Chart
-
-1. Build the chart using the optional helm plugin
-
-```sh
-kubebuilder edit --plugins=helm/v1-alpha
-```
-
-2. See that a chart was generated under 'dist/chart', and users
-can obtain this solution from there.
-
-**NOTE:** If you change the project, you need to update the Helm Chart
-using the same command above to sync the latest changes. Furthermore,
-if you create webhooks, you need to use the above command with
-the '--force' flag and manually ensure that any custom configuration
-previously added to 'dist/chart/values.yaml' or 'dist/chart/manager/manager.yaml'
-is manually re-applied afterwards.
-
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
-**NOTE:** Run `make help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
-
-## License
-
-Copyright 2025.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+```yaml
+apiVersion: apps.pwlctk.ovh/v1alpha1
+kind: Kroc
+metadata:
+  name: kroc-sample
+spec:
+  watchObject:
+    apiVersion: apps/v1
+    kind: Deployment
+    nameRegex: pawel
+    namespaceRegex: pawel
+  resourceToCreate: |
+    # Define variables for use in the template
+    {{- $pod1 := 1 -}}
+    {{- $pod2 := 2 -}}
+    
+    # --- Pod 1: Dynamically named and labeled using parent UID ---
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: nginx-pod-{{ $pod1 }}
+      namespace: pawel
+      labels:
+        environment: development
+        # Inject attribute from the watched (parent) object
+        parentuid: "{{.parent.metadata.uid}}"
+    spec:
+      containers:
+      - name: nginx-container
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+          protocol: TCP
+    ---
+    # --- Pod 2: Second object definition in the same template ---
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: nginx-pod-{{ $pod2 }}
+      namespace: pawel
+      labels:
+        environment: development
+    spec:
+      containers:
+      - name: nginx-container
+        # Corrected image tag for example clarity
+        image: nginx:latest 
+        ports:
+        - containerPort: 80 
+          protocol: TCP
