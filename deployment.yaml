@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # The name of your Deployment
+  name: pawel3 
+  namespace: pawel
+  labels:
+    app: nginx
+spec:
+  # Specifies that Kubernetes should maintain 1 replica of the Pod
+  replicas: 1 
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        # Use the official Nginx Docker image
+        image: nginx:latest 
+        ports:
+        - containerPort: 80
+        # Optional: Add a simple readiness probe to ensure traffic 
+        # is only sent when Nginx is ready to serve.
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        env:
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: MAX_THREADS
+          value: "10"

@@ -1,0 +1,78 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.19.0
+  name: krocs.apps.pwlctk.ovh
+spec:
+  group: apps.pwlctk.ovh
+  names:
+    kind: Kroc
+    listKind: KrocList
+    plural: krocs
+    singular: kroc
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.phase
+      name: Status
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Kroc is the Schema for the krocs API
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: spec defines the desired state of Kroc
+            properties:
+              resourceToCreate:
+                type: string
+              watchObject:
+                properties:
+                  apiVersion:
+                    type: string
+                  kind:
+                    type: string
+                  nameRegex:
+                    type: string
+                  namespaceRegex:
+                    type: string
+                required:
+                - apiVersion
+                - kind
+                - nameRegex
+                type: object
+            required:
+            - watchObject
+            type: object
+          status:
+            description: status defines the observed state of Kroc
+            properties:
+              phase:
+                type: string
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

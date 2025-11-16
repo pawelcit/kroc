@@ -1,0 +1,9 @@
+apiVersion: apps.pwlctk.ovh/v1alpha1
+kind: Kroc
+metadata:
+  labels:
+    app.kubernetes.io/name: kroc
+    app.kubernetes.io/managed-by: kustomize
+  name: kroc-sample
+spec:
+  # TODO(user): Add fields here

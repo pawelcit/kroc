@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - apps.pwlctk.ovh
+  resources:
+  - krocs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - apps.pwlctk.ovh
+  resources:
+  - krocs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - apps.pwlctk.ovh
+  resources:
+  - krocs/status
+  verbs:
+  - get
+  - patch
+  - update
