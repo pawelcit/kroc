@@ -1,4 +1,4 @@
-# 🚀 Kroc - Kubernetes Reactive Object Creator
+# <img width="148" height="160" alt="kroc_small_cropped" src="https://github.com/user-attachments/assets/3a5c3ba5-e750-49ef-b5ca-1b5db1ce6209" /> Kroc - Kubernetes Reactive Object Creator
 
 This is an **educational hobby project** designed to demonstrate the creation of Kubernetes Operators using **Go (Golang)** and the **kubebuilder** framework.
 
