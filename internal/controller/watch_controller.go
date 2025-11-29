@@ -83,8 +83,7 @@ func (r *watchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 	var buffer bytes.Buffer
 
-	var parent map[string]interface{}
-	parent = make(map[string]interface{})
+	parent := make(map[string]interface{})
 	parent["parent"] = r.watchedObj.Object
 
 	err = tmpl.Execute(&buffer, parent)
@@ -134,14 +133,14 @@ func (r *watchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 				"Kind", obj.GetKind(),
 				"Name", obj.GetName(),
 			)
-			if err := controllerutil.SetControllerReference(r.watchedObj, obj, r.Client.Scheme()); err != nil {
+			if err := controllerutil.SetControllerReference(r.watchedObj, obj, r.Scheme()); err != nil {
 				klog.ErrorS(err, "Couldn't set Controller Reference")
 			}
 
 			annotations[myAnnotationKey] = hash
 			obj.SetAnnotations(annotations)
 
-			if err := r.Client.Create(ctx, obj); err != nil {
+			if err := r.Create(ctx, obj); err != nil {
 				if errors.IsAlreadyExists(err) {
 					// If the Pod already exists (safe to ignore)
 					klog.InfoS("Resource already exists, skipping creation")
@@ -194,7 +193,7 @@ func (r *watchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			annotations[myAnnotationKey] = hash
 			obj.SetAnnotations(annotations)
 
-			if err := r.Client.Patch(ctx, obj, client.MergeFrom(objBeforeUpdate)); err != nil {
+			if err := r.Patch(ctx, obj, client.MergeFrom(objBeforeUpdate)); err != nil {
 				klog.Error(err, "Failed to patch annotation on existing resource")
 				return ctrl.Result{}, err
 			}
@@ -256,7 +255,9 @@ func (r *watchReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		targetGVK := obj.GroupVersionKind()
 		ownedPlaceholder := &unstructured.Unstructured{}
 		ownedPlaceholder.SetGroupVersionKind(targetGVK)
-		createController.Watch(source.Kind[client.Object](r.mgr.GetCache(), ownedPlaceholder, hdler))
+		if err := createController.Watch(source.Kind[client.Object](r.mgr.GetCache(), ownedPlaceholder, hdler)); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	go func() {

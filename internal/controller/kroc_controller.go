@@ -120,7 +120,7 @@ func (r *KrocReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 				return ctrl.Result{}, err
 			}
 
-			// Check if Db has controlelr name
+			// Check if DB has controller name
 			r.watchDBMutex.Lock()
 			ctrl_config, ctrl_name := r.watchDB[krocObjectUID]
 			r.watchDBMutex.Unlock()
@@ -230,7 +230,9 @@ func (r *KrocReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			"error", err)
 	}
 
-	r.SetStatus(&ctx, krocObject, "Initializing")
+	if err := r.SetStatus(&ctx, krocObject, "Initializing"); err != nil {
+		return ctrl.Result{}, err
+	}
 
 	go func() {
 		klog.InfoS("Starting the Watch Controller", "controller", watchControllerName)

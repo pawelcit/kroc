@@ -53,7 +53,7 @@ func (r *createReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 		obj.SetResourceVersion("")
 
-		if err := controllerutil.SetControllerReference(r.watchedObj, obj, r.Client.Scheme()); err != nil {
+		if err := controllerutil.SetControllerReference(r.watchedObj, obj, r.Scheme()); err != nil {
 			klog.ErrorS(err, "Couldn't set Controller Reference")
 		}
 		err := r.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
@@ -64,7 +64,7 @@ func (r *createReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				"Kind", obj.GetKind(),
 				"Name", obj.GetName(),
 			)
-			if err := r.Client.Create(ctx, obj); err != nil {
+			if err := r.Create(ctx, obj); err != nil {
 				if errors.IsAlreadyExists(err) {
 					// If the Pod already exists (safe to ignore)
 					klog.InfoS("Pod already exists, skipping creation")
